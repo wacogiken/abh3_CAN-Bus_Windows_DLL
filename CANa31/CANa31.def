@@ -1,0 +1,36 @@
+LIBRARY      "CANa31"
+
+EXPORTS
+
+	InitInstance			@2
+	ExitInstance
+	GetInterfaceCount
+	OpenInterface
+	CloseInterface
+	GetCurrentInterface
+	IsOpenInterface
+	SetOpenTimeout
+	SetSendTimeout
+	SetRecvTimeout
+	SetTargetID
+	GetTargetID
+	SetHostID
+	GetHostID
+	SetBaudrate
+	GetBaudrate
+	GetTm
+	abh3_can_init
+	abh3_can_cmdAY
+	abh3_can_cmdBX
+	abh3_can_cmd
+	abh3_can_inSet
+	abh3_can_inBitSet
+	abh3_can_reqPulse
+	abh3_can_reqBRD
+	abh3_can_trans
+	cnvVel2CAN
+	cnvCAN2Vel
+	cnvCAN2Trq
+	cnvCAN2Load
+	cnvCAN2Analog
+	cnvCAN2Volt

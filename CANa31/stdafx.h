@@ -11,6 +11,8 @@
 // Windows ヘッダー ファイル:
 #include <windows.h>
 
+#include <stdint.h>
+#include "ABH3.h"
+#include "IxxatV2.h"
+#include "IxxatSimple.h"
 
-
-// TODO: プログラムに必要な追加ヘッダーをここで参照してください
