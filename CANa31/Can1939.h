@@ -153,7 +153,7 @@ public:
 		}
 
 	//マルチパケット(CM.RTS)の構築
-	static uint8_t* CreateCMRTS(uint32_t nDataSize,uint8_t nMaxResponce = 0xff)
+	static uint8_t* CreateCMRTS(uint32_t nDataSize,uint8_t nMaxResponce = 0x08)
 		{
 		uint8_t* pBuffer = CreateBuffer(0xff);
 		uint8_t nMsgCount = datasize2msgcount(nDataSize);

@@ -82,7 +82,7 @@ int32_t CCanIF::OnCanRecv(uint32_t* pCanID,uint8_t* pData8)
 	}
 
 //CANインターフェースに送信する場合に呼び出されます
-int32_t CCanIF::OnCanSend(uint32_t nCanID,uint8_t* pData8)
+int32_t CCanIF::OnCanSend(uint32_t nCanID,uint8_t* pData8,uint8_t nLength)
 	{
 	//概要
 	//	CANインターフェースに1つ分のパケットを送信します

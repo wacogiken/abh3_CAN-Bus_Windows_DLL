@@ -277,7 +277,7 @@ int32_t CIxxatSimple::OnCanRecv(uint32_t* pCanID,uint8_t* pData8)
 	}
 
 //CANインターフェースに送信する場合に呼び出されます
-int32_t CIxxatSimple::OnCanSend(uint32_t nCanID,uint8_t* pData8)
+int32_t CIxxatSimple::OnCanSend(uint32_t nCanID,uint8_t* pData8,uint8_t nLength)
 	{
 	//概要
 	//	CANインターフェースに1つ分のパケットを送信します
@@ -297,7 +297,7 @@ int32_t CIxxatSimple::OnCanSend(uint32_t nCanID,uint8_t* pData8)
 
 	//
 	can_msg_t msg;
-	msg.dlc = 8;
+	msg.dlc = nLength;
 	msg.ident = nCanID | 0x80000000;
 	memcpy(msg.payload,pData8,sizeof(char) * 8);
 

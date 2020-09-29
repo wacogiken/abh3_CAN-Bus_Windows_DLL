@@ -629,7 +629,7 @@ int32_t CIxxatV2::OnCanRecv(uint32_t* pCanID,uint8_t* pData8)
 	}
 
 //CANインターフェースに送信する場合に呼び出されます
-int32_t CIxxatV2::OnCanSend(uint32_t nCanID,uint8_t* pData8)
+int32_t CIxxatV2::OnCanSend(uint32_t nCanID,uint8_t* pData8,uint8_t nLength)
 	{
 	//概要
 	//	CANインターフェースに1つ分のパケットを送信します
@@ -648,7 +648,7 @@ int32_t CIxxatV2::OnCanSend(uint32_t nCanID,uint8_t* pData8)
 		debugprint(true,nCanID,pData8);
 
 	//データ長
-	UINT payloadLen = 8;
+	UINT payloadLen = nLength;
 
 	//送信用FIFOにアクセスして、データを設定する
 	PCANMSG pMsg;
@@ -670,7 +670,7 @@ int32_t CIxxatV2::OnCanSend(uint32_t nCanID,uint8_t* pData8)
 			pMsg->uMsgInfo.Bits.fdr		= 0;					//High bit rate
 			pMsg->uMsgInfo.Bits.esi		= 0;					//(out)Error state indicator
 			pMsg->uMsgInfo.Bits.res		= 0;					//予約エリア(0指定)
-			pMsg->uMsgInfo.Bits.dlc		= 8;					//パケット長は8バイト
+			pMsg->uMsgInfo.Bits.dlc		= payloadLen;			//パケット長は8バイト
 			pMsg->uMsgInfo.Bits.ovr		= 0;					//(out)Data overrun
 			pMsg->uMsgInfo.Bits.srr		= 1;					//Self reception request.
 			pMsg->uMsgInfo.Bits.rtr		= 0;					//Remote transmission request

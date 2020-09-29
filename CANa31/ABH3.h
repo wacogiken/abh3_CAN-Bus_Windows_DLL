@@ -224,14 +224,14 @@ protected:
 		}
 
 	//CAN送信
-	int32_t CanSend8(uint32_t nSendID,uint8_t* pSendData);
+	int32_t CanSend8(uint32_t nSendID,uint8_t* pSendData,uint8_t nLength);
 
 	//CAN受信
 	int32_t CanRecv8(uint32_t* pRecvID,uint8_t* pRecvData); 
 
 	//シングルパケット送受信
-	int32_t CanTermSingle(uint32_t nSendID,uint8_t* pSendData,pCANABH3_RESULT pResult);
-	int32_t CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendData,pCANABH3_RESULT pResult);
+	int32_t CanTermSingle(uint32_t nSendID,uint8_t* pSendData,pCANABH3_RESULT pResult,uint8_t nLength);
+	int32_t CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendData,pCANABH3_RESULT pResult,uint8_t nLength);
 
 
 	//マルチパケット送信

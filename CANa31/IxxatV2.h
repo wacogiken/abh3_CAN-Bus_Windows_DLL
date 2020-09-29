@@ -34,7 +34,7 @@ public:
 	virtual int32_t OnCanRecv(uint32_t* pCanID,uint8_t* pData8);
 
 	//CANインターフェースに送信する場合に呼び出されます
-	virtual int32_t OnCanSend(uint32_t nCanID,uint8_t* pData8);
+	virtual int32_t OnCanSend(uint32_t nCanID,uint8_t* pData8,uint8_t nLength);
 
 	//CANインターフェースにエラーが有るか調べる場合に呼び出されます
 	virtual int32_t OnCanGetError(void);

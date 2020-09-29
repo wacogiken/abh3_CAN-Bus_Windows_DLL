@@ -1,5 +1,14 @@
 //概要
 //	ABH3用CAN制御クラス
+//
+//履歴
+//	2020/09/xx	yo0043		1st release
+//	2020/09/29	yo0043		2nd release
+//							送信長を8バイト未満にする必要が有る為、幾つかの関数に送信長を追加
+//							マルチパケットのデフォルト要求数を 0xff -> 0x08 に変更
+//							マルチパケットを途中で中止する場合にABORTを発行する様に修正
+//							（送信に失敗した場合が主な原因の為、ABORTが実際に送信されるかは時の運）
+//
 
 #include "stdafx.h"
 #include <memory.h>		//memset,
@@ -137,7 +146,6 @@ uint8_t CAbh3::GetHostID()
 	return(m_var.config.nHostAdrs);
 	}
 
-
 //通信速度を指定
 void CAbh3::SetBaudrate(uint32_t nBaudrateKbps)
 	{
@@ -159,7 +167,6 @@ uint32_t CAbh3::GetBaudrate(void)
 		return(0);
 	return(m_var.pDeviceClass->GetBaudrate());
 	}
-
 
 //================================================================================
 //ユーザーが利用可能な関数（ABH3要素）
@@ -199,7 +206,7 @@ int32_t CAbh3::abh3_can_init()
 			ClearRecvBuffer();
 
 			//送信
-			nResult = CanTermSingle(nSendID,pPacket,&result);
+			nResult = CanTermSingle(nSendID,pPacket,&result,8);
 
 			//開放
 			CCan1939::FreeBuffer(pPacket);
@@ -258,7 +265,7 @@ int32_t CAbh3::abh3_can_cmd(int16_t cmdAY,int16_t cmdBX,pCANABH3_RESULT pPtr)
 			ClearRecvBuffer();
 
 			//送信
-			nResult = CanTermSingle(nSendID,pPacket,pPtr);
+			nResult = CanTermSingle(nSendID,pPacket,pPtr,8);
 
 			//開放
 			CCan1939::FreeBuffer(pPacket);
@@ -284,7 +291,7 @@ int32_t CAbh3::abh3_can_inSet(int32_t data,int32_t mask,pCANABH3_RESULT pPtr)
 		if(IsOpenInterface())
 			{
 			//設定値を格納
-			m_var.lastdata.send.nInputBit = (data & ~mask) | (data | mask);
+			m_var.lastdata.send.nInputBit = (data & ~mask) | (data & mask);
 
 			//シングルパケット(DP0)を構築
 			uint8_t* pPacket = CCan1939::CreateSGL0(
@@ -300,7 +307,7 @@ int32_t CAbh3::abh3_can_inSet(int32_t data,int32_t mask,pCANABH3_RESULT pPtr)
 			ClearRecvBuffer();
 
 			//送信
-			nResult = CanTermSingle(nSendID,pPacket,pPtr);
+			nResult = CanTermSingle(nSendID,pPacket,pPtr,8);
 
 			//開放
 			CCan1939::FreeBuffer(pPacket);
@@ -345,7 +352,7 @@ int32_t CAbh3::abh3_can_inBitSet(int8_t num,int8_t data,pCANABH3_RESULT pPtr)
 			ClearRecvBuffer();
 
 			//送信
-			nResult = CanTermSingle(nSendID,pPacket,pPtr);
+			nResult = CanTermSingle(nSendID,pPacket,pPtr,8);
 
 			//開放
 			CCan1939::FreeBuffer(pPacket);
@@ -380,7 +387,7 @@ int32_t CAbh3::abh3_can_reqPulse(pCANABH3_RESULT pPtr)
 			ClearRecvBuffer();
 
 			//送信
-			nResult = CanTermSingle(nSendID,pPacket,pPtr);
+			nResult = CanTermSingle(nSendID,pPacket,pPtr,0);
 
 			//開放
 			CCan1939::FreeBuffer(pPacket);
@@ -421,7 +428,7 @@ int32_t CAbh3::abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr)
 			uint32_t nOnlyID = 0x00ff0000 | (num << 8) | GetTargetID();
 
 			//送信
-			nResult = CanTermSingle(nSendID,nOnlyID,pPacket,pPtr);
+			nResult = CanTermSingle(nSendID,nOnlyID,pPacket,pPtr,3);
 
 			//開放
 			CCan1939::FreeBuffer(pPacket);
@@ -505,7 +512,7 @@ int32_t CAbh3::abh3_can_trans(char* sbuf,char*& rbuf,size_t& rbuflen)
 //================================================================================
 
 //8[bytes]送受信
-int32_t CAbh3::CanSend8(uint32_t nSendID,uint8_t* pSendData)
+int32_t CAbh3::CanSend8(uint32_t nSendID,uint8_t* pSendData,uint8_t nLength)
 	{
 	//概要
 	//	CANインターフェースに対してIDを指定してデータを送信
@@ -523,7 +530,7 @@ int32_t CAbh3::CanSend8(uint32_t nSendID,uint8_t* pSendData)
 
 	//デバイスクラスが登録済みなら送信
 	if(m_var.pDeviceClass)
-		nResult = m_var.pDeviceClass->OnCanSend(nSendID,pSendData);
+		nResult = m_var.pDeviceClass->OnCanSend(nSendID,pSendData,nLength);
 
 	//完了
 	return(nResult);
@@ -555,7 +562,7 @@ int32_t CAbh3::CanRecv8(uint32_t* pRecvID,uint8_t* pRecvData)
 	}
 
 //シングルパケット送受信
-int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint8_t* pSendData,pCANABH3_RESULT pResult)
+int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint8_t* pSendData,pCANABH3_RESULT pResult,uint8_t nLength)
 	{
 	//概要
 	//	CANインターフェースを使用してシングルパケットを送受信
@@ -568,7 +575,7 @@ int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint8_t* pSendData,pCANABH3_RESULT
 	//	0以外		異常終了
 
 	//送信
-	int32_t nResult = CanSend8(nSendID,pSendData);
+	int32_t nResult = CanSend8(nSendID,pSendData,nLength);
 
 	//送信成功？
 	if(nResult == 0)
@@ -576,7 +583,7 @@ int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint8_t* pSendData,pCANABH3_RESULT
 	//
 	return(nResult);
 	}
-int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendData,pCANABH3_RESULT pResult)
+int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendData,pCANABH3_RESULT pResult,uint8_t nLength)
 	{
 	//概要
 	//	CANインターフェースを使用してシングルパケットを送受信
@@ -597,7 +604,7 @@ int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendDat
 	m_var.pDeviceClass->SetRecvOnlyID(nOnlyID);
 
 	//送信
-	int32_t nResult = CanSend8(nSendID,pSendData);
+	int32_t nResult = CanSend8(nSendID,pSendData,nLength);
 
 	//送信成功？
 	if(nResult == 0)
@@ -608,11 +615,7 @@ int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendDat
 
 	//
 	return(nResult);
-
 	}
-
-
-
 
 //マルチパケット送信
 int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_t*& pRecvData,uint32_t& nRecvDataSize)
@@ -620,6 +623,9 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 	//注意点
 	//	pSendData末尾にSYN(0x16)を追加してから呼び出す事
 	//	(abh3_can_trans関数内で追加している）
+
+	//
+	int32_t nErrStage = 0;
 
 	//
 	uint32_t nStage = 0;	//状態遷移処理用ステージ番号
@@ -645,13 +651,16 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 
 			//パケットを作って送信
 			uint8_t* pPacket = CCan1939::CreateCMRTS(nSendDataSize,nMaxPacket);
-			nResult = CanSend8(nSendID,pPacket);
+			nResult = CanSend8(nSendID,pPacket,8);
 			CCan1939::FreeBuffer(pPacket);
 			//送信正常？
 			if(nResult == 0)
 				nStage = 1;
 			else
-				nStage = 90;	//RTS送信時に失敗
+				{
+				nErrStage = nStage;
+				nStage = 99;	//RTS送信時に失敗、何も送信してないのでそのまま終了
+				}
 			}
 
 		//CTS/EOMA/ABORTを受け取るステージ
@@ -683,13 +692,15 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				else if(nType == CCan1939::DEF_ABORT)
 					{
 					//中止扱い
+					nErrStage = nStage;
 					nStage = 99;
 					}
 				}
 			else
 				{
-				//受信処理時に失敗
-				nStage = 91;	
+				//受信処理に失敗したので、ABORT発行
+				nErrStage = nStage;
+				nStage = 10;
 				}
 
 			//
@@ -710,17 +721,20 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				//CM_DTパケットを作成し、送信する
 				uint8_t* pPacket = CCan1939::CreateCMDT(pSendData,nSendDataSize,nPacketNum++);
 				if(pPacket)
-					nResult = CanSend8(nSendDTID,pPacket);
+					nResult = CanSend8(nSendDTID,pPacket,8);
 				CCan1939::FreeBuffer(pPacket);
 				if(nResult)
 					break;
 				}
-			//
+			//CM_DTパケットの送信に失敗？
 			if(nResult)
-				nStage = 99;
+				{
+				//CM_DTパケットの送信に失敗したので、ABORT発行
+				nErrStage = nStage;
+				nStage = 10;
+				}
 			else
 				nStage = 1;
-
 			}
 
 		//EOMAを受け取った後のRTS受信ステージ
@@ -734,10 +748,9 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				{
 				//何のパケット？
 				uint8_t nType = CCan1939::IsPacket(pPacket);
-				//
+				//CM_RTS?
 				if(nType == CCan1939::DEF_RTS)
 					{
-
 					//メッセージサイズを取得し、バッファを構築
 					nRecvDataSize = CCan1939::Get16L(pPacket,1);
 					pRecvData = new uint8_t[nRecvDataSize + 1]();	//終端用に+1して初期化済みで確保する
@@ -754,20 +767,28 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					//CTSを返答するステージに遷移
 					nStage = 4;
 					}
+				//CM_EOMA?
 				else if(nType == CCan1939::DEF_EOMA)
 					{
 					nStage = 6;
 					}
+				//CM_ABORT?
 				else if(nType == CCan1939::DEF_ABORT)
 					{
 					//中止扱い
+					nErrStage = nStage;
 					nStage = 99;
+					}
+				else
+					{
+					//上記以外は見なかった事にして再送を待つ
 					}
 				}
 			else
 				{
-				//受信処理時に失敗
-				nStage = 93;	
+				//受信処理時に失敗、ABORT送信
+				nErrStage = nStage;
+				nStage = 10;	
 				}
 			//
 			CCan1939::FreeBuffer(pPacket);
@@ -777,16 +798,19 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			{
 			//送信許可パケットはターゲット側が指定した値をそのまま利用
 
-
-			//パケットを作って送信
+			//CM_CTSパケットを作って送信
 			uint8_t* pPacket = CCan1939::CreateCMCTS(nMaxPacket,nPacketNum);
-			nResult = CanSend8(nSendID,pPacket);
+			nResult = CanSend8(nSendID,pPacket,8);
 			CCan1939::FreeBuffer(pPacket);
-			//送信正常？
+			//CM_CTS送信正常？
 			if(nResult == 0)
 				nStage = 5;
 			else
-				nStage = 94;	//CTS返答時に失敗
+				{
+				//CM_CTS送信失敗したので、ABORT発行
+				nErrStage = nStage;
+				nStage = 10;
+				}
 			}
 
 		//DT受信ステージ
@@ -819,8 +843,9 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					}
 				else
 					{
-					//DT受信処理時に失敗
-					nStage = 95;	
+					//DT受信処理時に失敗、ABORT発行
+					nErrStage = nStage;
+					nStage = 10;
 					break;
 					}
 				}
@@ -842,13 +867,17 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			{
 			//パケットを作って送信
 			uint8_t* pPacket = CCan1939::CreateCMEOMA(nTotalPacket * 8,nTotalPacket);
-			nResult = CanSend8(nSendID,pPacket);
+			nResult = CanSend8(nSendID,pPacket,8);
 			CCan1939::FreeBuffer(pPacket);
 			//送信正常？
 			if(nResult == 0)
 				nStage = 7;
 			else
-				nStage = 96;	//CTS返答時に失敗
+				{
+				//CTS返答時に失敗、ABORT発行
+				nErrStage = nStage;
+				nStage = 10;
+				}
 			}
 
 		//完了ステージ
@@ -858,12 +887,22 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			break;
 			}
 
+		//ホスト側から中止要求ステージ
+		else if(nStage == 10)
+			{
+			//ABORTパケットを作る
+			uint8_t* pPacket = CCan1939::CreateCMABORT(2);	//リソース不足を理由としてABORTパケットを作る
+			nResult = CanSend8(nSendID,pPacket,8);
+			CCan1939::FreeBuffer(pPacket);
+			//
+			nStage = 99;
+			}
+
 		//上記以外（エラーステージ）
 		else
 			{
-			//異常終了
-			//	nStage - 90 がエラー発生ステージ
-			return(nStage);
+			//異常終了（異常発生ステージ番号+90が戻る）
+			return(nErrStage + 90);
 			}
 		}
 
