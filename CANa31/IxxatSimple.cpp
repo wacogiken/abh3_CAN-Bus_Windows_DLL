@@ -4,6 +4,14 @@
 //	Ixxat V2のデバイスを使う為のクラス
 //
 //========================================
+//履歴
+//========================================
+//	2020.09.xx	yo0043	1st release
+//	2020.10.01	yo0043	2nd release
+//						simply_open時、既存COMポート(not CAN)を開いた場合に
+//						一度simply_closeを呼び出さないと開けなくなる問題に対処
+//
+//========================================
 //実装に必要な前処理
 //========================================
 //	IxxatSimple用のドライバをダウンロードして展開（SDKも入っている）
@@ -137,7 +145,7 @@ int32_t CIxxatSimple::OnOpenInterface(int32_t nDeviceNum)
 	//	nDeviceNum		1開始のCOMポート番号
 	//戻り値
 	//	0				正常終了
-	//	0以外			異常終了
+	//	0以外			異常終了(simply_get_last_errorの戻り値参照)
 
 	//todo:CANインターフェースを開く処理を実装して下さい
 
@@ -150,14 +158,18 @@ int32_t CIxxatSimple::OnOpenInterface(int32_t nDeviceNum)
 	bool bResult = simply_open(pDeviceName);
 	delete pDeviceName;
 	if(!bResult)
-		return(-1);
-
+		{
+		//失敗
+		simply_close();		//既存COMポートを間違って開いた場合、内部的に開いたままになる模様で
+							//明示的に閉じないと次回のsimply_openで占有されている扱いとなる
+		return((int32_t)simply_get_last_error());
+		}
 	//回線の初期化
 	if(!simply_initialize_can(uint16_t(GetBaudrate())))
 		{
 		//失敗
 		simply_close();
-		return(-1);	//Error;
+		return((int32_t)simply_get_last_error());
 		}
 
 	//CANの開始
@@ -166,7 +178,7 @@ int32_t CIxxatSimple::OnOpenInterface(int32_t nDeviceNum)
 		//失敗
 		simply_reset_can();
 		simply_close();
-		return(-1);	//
+		return((int32_t)simply_get_last_error());
 		}
 
 	//ステータスの初期化
@@ -287,7 +299,7 @@ int32_t CIxxatSimple::OnCanSend(uint32_t nCanID,uint8_t* pData8,uint8_t nLength)
 	//	nTimeoutMS		送信許容時間[ms]
 	//戻り値
 	//	0				正常終了
-	//	0以外			異常終了
+	//	0以外			異常終了(simply_get_last_errorの戻り値参照)
 
 	//todo:CANインターフェースに送信する処理を実装して下さい
 
@@ -302,7 +314,7 @@ int32_t CIxxatSimple::OnCanSend(uint32_t nCanID,uint8_t* pData8,uint8_t nLength)
 	memcpy(msg.payload,pData8,sizeof(char) * 8);
 
 	if(!simply_send(&msg))
-		return(-1);	//Error
+		return((int32_t)simply_get_last_error());	//Error
 	return(0);
 	}
 
@@ -333,6 +345,8 @@ int32_t CIxxatSimple::OnCanClearError()
 	{
 	//概要
 	//	CANインターフェースのエラーを解除します
+	//	内部保存のエラーコードを解除するだけで、ハードウェアのエラーは解除不可
+	//	（ハードウェアエラーは、一度完全に閉じないと(simply_close)解除出来ない）
 	//パラメータ
 	//	無し
 	//戻り値
@@ -349,8 +363,6 @@ int32_t CIxxatSimple::OnCanClearError()
 		//排他制御解除
 		UnlockCanMsg();
 		}
-	//デバイスのエラーを解除
-	//simply_reset_can();
 
 	return(0);
 	}
