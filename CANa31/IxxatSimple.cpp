@@ -416,15 +416,15 @@ unsigned int __stdcall CIxxatSimple::ReceiveThread(void* Param)
 			{
 			//受信
 			int8_t nResult = simply_receive(&canMsg);
-			//受信無し？
-			if(nResult == 0)
-				nStage = 1; 
 			//メッセージ受信？
-			else if(nResult == 1)
+			if(nResult == 1)
 				nStage = 2;
 			//エラー？
-			else
+			else if(nResult == -1)
 				nStage = 90;
+			//受信無し？
+			else
+				nStage = 1; 
 			}
 		//時間待ち
 		else if (nStage == 1)
@@ -466,8 +466,6 @@ unsigned int __stdcall CIxxatSimple::ReceiveThread(void* Param)
 				//ステータス取得エラー
 				pClass->m_status.err.info.nErrorStatus = 1;	//エラー原因が判らないので、強制的にエラー扱い
 				}
-			//強制待ち時間
-			Sleep(100);
 			//受信ステージに遷移
 			nStage = 0;
 			}
