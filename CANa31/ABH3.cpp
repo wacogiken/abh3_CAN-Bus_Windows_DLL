@@ -479,18 +479,34 @@ int32_t CAbh3::abh3_can_trans(char* sbuf,char*& rbuf,size_t& rbuflen)
 		//インターフェースを開いている？
 		if(IsOpenInterface())
 			{
-			//一時バッファ構築（末尾にSYNをつける為）
+			//一時バッファ構築
+			//2020.10.09 yo0043 以下仕様に変更
+			//	データ部分が最低9バイトになる様に1つ以上のSYNを追加
+
+			//文字列のサイズを元に、バッファサイズを算出
 			size_t nSrcLen = ::strlen(sbuf);
-			char* pTmp = new char[nSrcLen + 2]();
+			size_t nBufLen = 0;
+			if(nSrcLen < 9)
+				nBufLen = 9;
+			else
+				nBufLen = nSrcLen + 1;
+
+			//終端分を考慮してバッファを構築
+			char* pTmp = new char[nBufLen + 1]();	//初期化付きで確保（終端の為）
+
+			//終端を除いてSYN(0x16)で埋める
+			::memset(pTmp,0x16,nBufLen);
+
+			//元文字列を先頭から文字数分だけコピーする
 			::memcpy(pTmp,sbuf,nSrcLen);
-			pTmp[nSrcLen] = 0x16;	//SYN
 
 			//型変換
 			uint8_t* pSrc = (uint8_t*)pTmp;
 			uint8_t* pDst = 0;
 			uint32_t nDstSize = 0;
 
-			nResult = CanTermSendMulti(pSrc,uint32_t(nSrcLen + 1),pDst,nDstSize);
+			//送受信
+			nResult = CanTermSendMulti(pSrc,uint32_t(nBufLen),pDst,nDstSize);
 			if(nResult == 0)
 				{
 				rbuf = (char*)pDst;
