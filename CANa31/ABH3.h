@@ -233,11 +233,13 @@ protected:
 	int32_t CanTermSingle(uint32_t nSendID,uint8_t* pSendData,pCANABH3_RESULT pResult,uint8_t nLength);
 	int32_t CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendData,pCANABH3_RESULT pResult,uint8_t nLength);
 
-
 	//マルチパケット送信
 	int32_t CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_t*& pRecvData,uint32_t& nRecvDataSize);
 
-	//内部用
+	//戻り値用構造体に最後に送信したデータを書き込み
+	void SetLastData(pCANABH3_RESULT pDst);
+
+	//内部用変数
 	typedef struct _CANABH3_VAR
 		{
 		CCanIF*				pDeviceClass;	//出力先のクラス

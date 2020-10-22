@@ -98,12 +98,15 @@ CIxxatSimple::CIxxatSimple()
 	//ステータス保存用領域を初期化
 	memset(&m_status,0,sizeof(IXXATSMPL_STATUS));
 	//その他初期化
-	m_hSema = NULL;
 	m_hReadThread = NULL;
 	m_bQuitThread = false;
 	m_nCanReadPt = 0;
 	m_nCanWritePt = 0;
 	m_pCanMsg = NULL;
+
+	//排他制御用セマフォ
+	m_hSema = ::CreateSemaphore(NULL,1,1,NULL);
+	m_hSema2 = ::CreateSemaphore(NULL,1,1,NULL);
 	}
 
 //デストラクタ
@@ -111,6 +114,19 @@ CIxxatSimple::~CIxxatSimple()
 	{
 	//回線を開いている場合が有るので閉じる処理を行う
 	OnCloseInterface();
+
+	//排他制御用セマフォ開放
+	if(m_hSema)
+		{
+		::CloseHandle(m_hSema);
+		m_hSema = NULL;
+		}
+	if(m_hSema2)
+		{
+		::CloseHandle(m_hSema2);
+		m_hSema2 = NULL;
+		}
+
 	}
 
 //================================================================================
@@ -149,58 +165,79 @@ int32_t CIxxatSimple::OnOpenInterface(int32_t nDeviceNum)
 
 	//todo:CANインターフェースを開く処理を実装して下さい
 
+	int nResult = -1;
+
 	//開いている場合が有るので閉じる
 	OnCloseInterface();
 
-	//デバイス名を構築して回線を開く
-	char* pDeviceName = new char[16]();
-	sprintf_s(pDeviceName,16,"COM%d",nDeviceNum);
-	bool bResult = simply_open(pDeviceName);
-	delete pDeviceName;
-	if(!bResult)
+	//排他制御開始
+	if(!LockCanMsg())
+		return(-1);	//資源占有失敗
+
+	//
+	do
 		{
-		//失敗
-		simply_close();		//既存COMポートを間違って開いた場合、内部的に開いたままになる模様で
-							//明示的に閉じないと次回のsimply_openで占有されている扱いとなる
-		return((int32_t)simply_get_last_error());
-		}
-	//回線の初期化
-	if(!simply_initialize_can(uint16_t(GetBaudrate())))
-		{
-		//失敗
-		simply_close();
-		return((int32_t)simply_get_last_error());
-		}
+		//デバイス名を構築して回線を開く
+		char* pDeviceName = new char[16]();
+		sprintf_s(pDeviceName,16,"COM%d",nDeviceNum);
+		bool bResult = simply_open(pDeviceName);
+		delete pDeviceName;
+		if(!bResult)
+			{
+			//失敗
+			simply_close();		//既存COMポートを間違って開いた場合、内部的に開いたままになる模様で
+								//明示的に閉じないと次回のsimply_openで占有されている扱いとなる
+			//内部エラーコードを戻す
+			nResult = (int32_t)simply_get_last_error();
+			break;
+			}
 
-	//CANの開始
-	else if(!simply_start_can())
-		{
-		//失敗
-		simply_reset_can();
-		simply_close();
-		return((int32_t)simply_get_last_error());
-		}
+		//回線の初期化
+		if(!simply_initialize_can(uint16_t(GetBaudrate())))
+			{
+			//失敗
+			simply_close();
+			//内部エラーコードを戻す
+			nResult = (int32_t)simply_get_last_error();
+			break;
+			}
 
-	//ステータスの初期化
-	m_status.err.nRaw = 0;
+		//CANの開始
+		if(!simply_start_can())
+			{
+			//失敗
+			simply_reset_can();
+			simply_close();
+			//内部エラーコードを戻す
+			nResult = (int32_t)simply_get_last_error();
+			break;
+			}
 
-	//受信データ排他制御用セマフォ
-	m_hSema = ::CreateSemaphore(NULL,1,1,NULL);
+		//ステータスの初期化
+		m_status.err.nRaw = 0;
 
-	//受信データ格納用領域の初期化
-	m_pCanMsg = new can_msg_t[256]();
-	m_nCanReadPt = 0;
-	m_nCanWritePt = 0;
+		//受信データ格納用領域の初期化
+		m_pCanMsg = new can_msg_t[256]();
+		m_nCanReadPt = 0;
+		m_nCanWritePt = 0;
 
-	//受信スレッド開始
-	m_bQuitThread = false;
-	::SetThreadPriority(m_hReadThread = (HANDLE)_beginthreadex(NULL,0,&CIxxatSimple::ReceiveThread,this,NULL,&m_nThreadID),THREAD_PRIORITY_NORMAL);
+		//受信スレッド開始
+		m_bQuitThread = false;
+		::SetThreadPriority(m_hReadThread = (HANDLE)_beginthreadex(NULL,0,&CIxxatSimple::ReceiveThread,this,NULL,&m_nThreadID),THREAD_PRIORITY_NORMAL);
 
-	//接続済みフラグ設定
-	m_status.bOpen = true;
+		//接続済みフラグ設定
+		m_status.bOpen = true;
+
+		//
+		nResult = 0;
+		break;
+		} while(1);
+
+	//排他制御開放
+	UnlockCanMsg();
 
 	//処理完了
-	return(0);
+	return(nResult);
 	}
 
 //開いたCANインターフェースを閉じる場合に呼び出されます
@@ -214,6 +251,10 @@ void CIxxatSimple::OnCloseInterface()
 	//	無し
 
 	//todo:CANインターフェースを開いている場合に閉じる処理を実装して下さい
+
+	//排他制御
+	if(!LockCanMsg())
+		return;	//資源占有失敗
 
 	//受信スレッド動作中？
 	if (m_hReadThread)
@@ -234,15 +275,11 @@ void CIxxatSimple::OnCloseInterface()
 		m_status.bOpen = false;
 		}
 
-	//受信バッファ排他制御用セマフォ開放
-	if(m_hSema)
-		{
-		::CloseHandle(m_hSema);
-		m_hSema = NULL;
-		}
-
 	//受信バッファ開放
 	SafeDelete(&m_pCanMsg);
+
+	//排他制御開放
+	UnlockCanMsg();
 	}
 
 //CANインターフェースから受信する場合に呼び出されます
@@ -256,9 +293,13 @@ int32_t CIxxatSimple::OnCanRecv(uint32_t* pCanID,uint8_t* pData8)
 	//	nTimeoutMS		受信許容時間[ms]
 	//戻り値
 	//	0				正常終了
-	//	0以外			異常終了
+	//	0以外			タイムアウト
 
 	//todo:CANインターフェースから1回分の受信を行う処理を実装して下さい
+
+	//注意点
+	//	GetCanMsg関数がバッファの占有を行っている為、本関数内で
+	//	バッファの占有を行ってはならない
 
 	//戻り値
 	int32_t nResult = -1;
@@ -300,22 +341,67 @@ int32_t CIxxatSimple::OnCanSend(uint32_t nCanID,uint8_t* pData8,uint8_t nLength)
 	//戻り値
 	//	0				正常終了
 	//	0以外			異常終了(simply_get_last_errorの戻り値参照)
+	//注意点
+	//	IxxatSimpleの方は、送信前にステータスを確認し、PENDING状態になっていない事を
+	//	確認してから送信する必要が有る
+
+
 
 	//todo:CANインターフェースに送信する処理を実装して下さい
 
-	//For debug
-	if(DEBUGPRINT)
-		debugprint(true,nCanID,pData8);
+	//戻り値
+	int32_t nResult = -1;
+
+	//排他制御開始
+	if(!LockCanMsg())
+		return(-1);	//資源占有失敗
+
+	do
+		{
+		//For debug
+		if(DEBUGPRINT)
+			debugprint(true,nCanID,pData8);
+
+		//ステータス取得して送信可能になる迄待つ
+		can_sts_t status;
+		while(-1)
+			{
+			if(!simply_can_status(&status))
+				{
+				nResult = (int32_t)simply_get_last_error();
+				break;
+				}
+			else if(status.sts & CAN_STATUS_PENDING)
+				Sleep(1);
+			else
+				{
+				nResult = 0;
+				break;	//送信可能
+				}
+			}
+		if(nResult)
+			break;
+
+		//送信
+		can_msg_t msg;
+		msg.dlc = nLength;
+		msg.ident = nCanID | 0x80000000;
+		memcpy(msg.payload,pData8,sizeof(char) * 8);
+		if(!simply_send(&msg))
+			{
+			//送信失敗
+			nResult = (int32_t)simply_get_last_error();
+			break;
+			}
+		//
+		nResult = 0;
+		break;
+		} while(-1);
 
 	//
-	can_msg_t msg;
-	msg.dlc = nLength;
-	msg.ident = nCanID | 0x80000000;
-	memcpy(msg.payload,pData8,sizeof(char) * 8);
-
-	if(!simply_send(&msg))
-		return((int32_t)simply_get_last_error());	//Error
-	return(0);
+	UnlockCanMsg();
+	//
+	return(nResult);
 	}
 
 //CANインターフェースにエラーが有るか調べる場合に呼び出されます
@@ -355,14 +441,8 @@ int32_t CIxxatSimple::OnCanClearError()
 
 	//todo:CANインターフェースのエラーを解除する処理を実装して下さい
 
-	//排他制御成功？
-	if(LockCanMsg())
-		{
-		//内部に格納したエラー値を解除
-		m_status.err.nRaw = 0;
-		//排他制御解除
-		UnlockCanMsg();
-		}
+	//内部に格納したエラー値を解除
+	m_status.err.nRaw = 0;
 
 	return(0);
 	}
@@ -377,17 +457,20 @@ int32_t CIxxatSimple::OnCanRecvClear()
 	//戻り値
 	//	0				正常
 	//	0以外			異常
+	//注意点
+	//	既に資源占有された状態で呼び出されるので、資源占有しない事
+
 
 	//todo:受信バッファをクリアする処理を実装して下さい
 
-	//排他制御成功？
-	if(LockCanMsg())
+	//受信バッファ排他制御要求
+	if(LockBuffer())
 		{
 		//受信バッファ位置を初期化
 		m_nCanReadPt = 0;
 		m_nCanWritePt = 0;
-		//排他制御解除
-		UnlockCanMsg();
+		//受信バッファ排他制御解除
+		UnlockBuffer();
 		}
 	//
 	return(0);
@@ -400,6 +483,15 @@ int32_t CIxxatSimple::OnCanRecvClear()
 //非同期受信スレッド
 unsigned int __stdcall CIxxatSimple::ReceiveThread(void* Param)
 	{
+	//動作概要
+	//	受信した場合
+	//		有効なデータの場合
+	//			受信データを登録し、待ち時間なしで再度受信に戻る
+	//		無効なデータの場合
+	//			待ち時間なしで再度受信に戻る
+	//	受信しなかった、又はエラーが出た場合
+	//		一定時間待って、受信に戻る
+
 	//呼び出し元クラスへのポインタ
 	CIxxatSimple* pClass = (CIxxatSimple*)Param;
 
@@ -411,61 +503,47 @@ unsigned int __stdcall CIxxatSimple::ReceiveThread(void* Param)
 	//
 	while (!pClass->m_bQuitThread)
 		{
-		//受信
+		//受信ステージ
 		if (nStage == 0)
 			{
-			//受信
-			int8_t nResult = simply_receive(&canMsg);
-			//メッセージ受信？
-			if(nResult == 1)
-				nStage = 2;
-			//エラー？
-			else if(nResult == -1)
-				nStage = 90;
-			//受信無し？
+			//排他制御
+			if(pClass->LockCanMsg())
+				{
+				//受信
+				int8_t nResult = simply_receive(&canMsg);
+				//メッセージ受信？
+				if(nResult == 1)
+					{
+					//特殊メッセージ？
+					if(canMsg.dlc & 0x80)
+						{
+						//登録しない
+						}
+					else
+						{
+						//IDに細工
+						canMsg.ident &= 0x7fffffff;
+						//登録
+						pClass->AddCanMsg(&canMsg,1);
+						}
+					}
+				//エラー又は受信無し？
+				else
+					nStage = 1; 
+				//排他制御開放
+				pClass->UnlockCanMsg();
+				}
 			else
-				nStage = 1; 
+				{
+				//排他制御失敗は時間待ちに遷移
+				nStage = 1;
+				}
 			}
-		//時間待ち
+		//時間待ちステージ
 		else if (nStage == 1)
 			{
 			//一定時間待つ
 			Sleep(1);
-			//受信ステージに遷移
-			nStage = 0;
-			}
-		//受信データの登録
-		else if(nStage == 2)
-			{
-			//特殊メッセージ？
-			if(canMsg.dlc & 0x80)
-				{
-				//登録しない
-				}
-			else
-				{
-				//IDに細工
-				canMsg.ident &= 0x7fffffff;
-				//登録
-				pClass->AddCanMsg(&canMsg,1);
-				}
-			//受信ステージに遷移
-			nStage = 0;
-			}
-		//エラー
-		else
-			{
-			can_sts_t status;
-			if(simply_can_status(&status))
-				{
-				//ステータスを取得したので登録
-				pClass->m_status.err.nRaw = status.sts;
-				}
-			else
-				{
-				//ステータス取得エラー
-				pClass->m_status.err.info.nErrorStatus = 1;	//エラー原因が判らないので、強制的にエラー扱い
-				}
 			//受信ステージに遷移
 			nStage = 0;
 			}
@@ -475,27 +553,56 @@ unsigned int __stdcall CIxxatSimple::ReceiveThread(void* Param)
 	return(0);
 	}
 
-//受信バッファ排他制御要求
+//排他制御要求
 bool CIxxatSimple::LockCanMsg(DWORD nTimeoutMS /* INFINITE */)
 	{
+	//占有開始
 	if(::WaitForSingleObject(m_hSema,nTimeoutMS) != WAIT_OBJECT_0)
 		return(false);	//確保失敗
 	//確保成功
 	return(true);
 	}
 
-//受信バッファ排他制御解除
+//排他制御解除
 void CIxxatSimple::UnlockCanMsg()
 	{
+	//占有開放
 	::ReleaseSemaphore(m_hSema,1,NULL);
+	//他のスレッドに制御を渡す（待っているスレッドが有れば）
+	Sleep(0);
 	}
+
+//受信バッファ排他制御要求
+bool CIxxatSimple::LockBuffer()
+	{
+	//占有開始
+	if(::WaitForSingleObject(m_hSema2,INFINITE) != WAIT_OBJECT_0)
+		return(false);	//確保失敗
+	//確保成功
+	return(true);
+	}
+
+//受信バッファ排他制御解除
+void CIxxatSimple::UnlockBuffer()
+	{
+	//
+	//占有開放
+	::ReleaseSemaphore(m_hSema2,1,NULL);
+	//他のスレッドに制御を渡す（待っているスレッドが有れば）
+	Sleep(0);
+	}
+
+
 
 //受信データの登録処理
 uint32_t CIxxatSimple::AddCanMsg(can_msg_t* pMsg,int nCount /* 1 */)
 	{
-	//資源占有
-	if(!LockCanMsg())
-		return(0);	//資源占有失敗時は、登録数0として戻る
+	//注意点
+	//	この関数内で使用している排他制御は、バッファの方なので注意
+
+	//受信バッファ排他制御要求
+	if(!LockBuffer())
+		return(-1);
 
 	uint32_t nResult = 0;
 	while(nCount)
@@ -533,8 +640,10 @@ uint32_t CIxxatSimple::AddCanMsg(can_msg_t* pMsg,int nCount /* 1 */)
 		//残り更新
 		--nCount;
 		}
-	//資源開放
-	UnlockCanMsg();
+
+	//受信バッファ排他制御解除
+	UnlockBuffer();
+
 	//
 	return(nResult);
 	}
@@ -542,13 +651,15 @@ uint32_t CIxxatSimple::AddCanMsg(can_msg_t* pMsg,int nCount /* 1 */)
 //登録されたCANメッセージを1つ取得
 uint32_t CIxxatSimple::GetCanMsg(can_msg_t* pMsg)
 	{
+	//受信バッファ排他制御要求
+	if(!LockBuffer())
+		return(2);	//資源占有失敗時は、その他エラーとして戻る
+
 	//
 	uint32_t nResult = 0;
-	//資源占有
-	if(!LockCanMsg())
-		return(2);	//資源占有失敗時は、その他エラーとして戻る
+
 	//未読み出しの要素が有る？
-	else if(m_nCanReadPt < m_nCanWritePt)
+	if(m_nCanReadPt < m_nCanWritePt)
 		{
 		//該当箇所から取得
 		::memcpy(pMsg,&m_pCanMsg[m_nCanReadPt],sizeof(can_msg_t));
@@ -557,7 +668,7 @@ uint32_t CIxxatSimple::GetCanMsg(can_msg_t* pMsg)
 		//読み出し残りが無い？
 		if(m_nCanReadPt >= m_nCanWritePt)
 			{
-			//初期化（全クリア扱いでバッファを先頭に戻すが、排他制御済みなのでClearCanMsgを使わない事）
+			//初期化（全クリア扱いでバッファを先頭に戻すが、排他制御済みなのでOnCanRecvClearを使わない事）
 			m_nCanReadPt = 0;
 			m_nCanWritePt = 0;
 			}
@@ -566,8 +677,8 @@ uint32_t CIxxatSimple::GetCanMsg(can_msg_t* pMsg)
 	else
 		nResult = 1;
 
-	//資源開放
-	UnlockCanMsg();
+	//受信バッファ排他制御解除
+	UnlockBuffer();
 	//
 	return(nResult);
 	}

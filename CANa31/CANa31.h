@@ -101,7 +101,7 @@ CANA31API int32_t abh3_can_reqPulse(pCANABH3_RESULT pPtr);
 CANA31API int32_t abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr);
 
 //マルチパケットによるTelABH3パケットの送受信
-CANA31API int32_t abh3_can_trans(char* sbuf,char*& rbuf,size_t& rbuflen);
+CANA31API int32_t abh3_can_trans(char* sbuf,char* rbuf,size_t& rbuflen);
 
 //速度
 CANA31API int16_t	cnvVel2CAN(float vel);

@@ -69,7 +69,8 @@ public:
 		} IXXATSMPL_STATUS,*pIXXATSMPL_STATUS;
 	//
 	IXXATSMPL_STATUS	m_status;
-	HANDLE				m_hSema;			//受信バッファ排他制御用セマフォ
+	HANDLE				m_hSema;			//排他制御用セマフォ（関数）
+	HANDLE				m_hSema2;			//排他制御用セマフォ（受信バッファ）
 	HANDLE				m_hReadThread;		//受信スレッドハンドル
 	UINT				m_nThreadID;		//受信スレッドのプロセスID
 	bool				m_bQuitThread;		//trueでスレッド停止要求
@@ -80,11 +81,17 @@ public:
 	//非同期受信スレッド
 	static unsigned int __stdcall ReceiveThread(void* Param);
 
-	//受信バッファ排他制御要求
+	//CAN関数排他制御要求
 	bool LockCanMsg(DWORD nTimeoutMS = INFINITE);
 
-	//受信バッファ排他制御解除
+	//CNA関数排他制御解除
 	void UnlockCanMsg(void);
+
+	//受信バッファ排他制御要求
+	bool LockBuffer(void);
+
+	//受信バッファ排他制御解除
+	void UnlockBuffer(void);
 
 	//受信データの登録処理
 	uint32_t AddCanMsg(can_msg_t* pMsg,int nCount = 1);
@@ -106,6 +113,10 @@ protected:
 		//	printf("%02X ",pData[nLoop]);
 		//printf("\n");
 		}
+
+
+
+
 
 public:
 	CIxxatSimple();

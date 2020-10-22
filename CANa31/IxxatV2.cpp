@@ -596,7 +596,7 @@ int32_t CIxxatV2::OnCanRecv(uint32_t* pCanID,uint8_t* pData8)
 	//	nTimeoutMS		受信許容時間[ms]
 	//戻り値
 	//	0				正常終了
-	//	0以外			異常終了
+	//	0以外			タイムアウト
 
 	//todo:CANインターフェースから1回分の受信を行う処理を実装して下さい
 

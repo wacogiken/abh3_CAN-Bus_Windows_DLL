@@ -206,9 +206,44 @@ CANA31API int32_t abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr)
 	}
 
 //マルチパケットによるTelABH3パケットの送受信
-CANA31API int32_t abh3_can_trans(char* sbuf,char*& rbuf,size_t& rbuflen)
+CANA31API int32_t abh3_can_trans(char* sbuf,char* rbuf,size_t& rbuflen)
 	{
-	return(g_pAbh3->abh3_can_trans(sbuf,rbuf,rbuflen));
+	//注意点
+	//	アプリとDLLのHEAPが同一にならないような使い方（例：MFCをアプリで使用）を
+	//	した場合、DLL側で確保したバッファをアプリ側で開放出来ない(ASSERTされる)為、
+	//	ここでアプリ側のバッファにDLL側のバッファ内容をコピーする
+	//
+	//パラメータ
+	//	sbuf		送信データ(ANSI)
+	//	rbuf		受信データ格納領域（アプリ側で確保する）
+	//	rbuflen		受信データ格納領域のサイズ（アプリ側で設定する）
+	//戻り値
+	//	0			正常
+	//	-1			異常
+	//	-2			バッファサイズが足りない、必要だったサイズはrbuflenに入る
+
+	
+	//
+	char* pTmp = NULL;
+	size_t nTmpLen = 0;
+	int32_t nResult = g_pAbh3->abh3_can_trans(sbuf,pTmp,nTmpLen);
+	//正常？
+	if(nResult == 0)
+		{
+		//サイズが足りる？
+		if(rbuflen >= nTmpLen)
+			{
+			::CopyMemory(rbuf,pTmp,nTmpLen);
+			}
+		else
+			{
+			//足りない
+			rbuflen = nTmpLen;	//最低限必要なサイズを設定
+			nResult = -2;		//領域サイズが足りない扱い
+			}
+		}
+	//
+	return(nResult);
 	}
 
 //速度
@@ -242,6 +277,6 @@ CANA31API float	cnvCAN2Analog(int16_t analog)
 //電源電圧
 CANA31API float	cnvCAN2Volt(int16_t volt)
 	{
-	return(g_pAbh3->cnvCAN2Vel(volt));
+	return(g_pAbh3->cnvCAN2Volt(volt));
 	}
 

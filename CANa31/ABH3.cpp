@@ -274,6 +274,9 @@ int32_t CAbh3::abh3_can_cmd(int16_t cmdAY,int16_t cmdBX,pCANABH3_RESULT pPtr)
 		Unlock();
 		}
 
+	//構造体に送信要素を書き込み
+	SetLastData(pPtr);
+
 	//完了
 	return(nResult);
 	}
@@ -315,6 +318,9 @@ int32_t CAbh3::abh3_can_inSet(int32_t data,int32_t mask,pCANABH3_RESULT pPtr)
 		//通信排他制御用のセマフォを開放
 		Unlock();
 		}
+
+	//構造体に送信要素を書き込み
+	SetLastData(pPtr);
 
 	//完了
 	return(nResult);
@@ -361,6 +367,9 @@ int32_t CAbh3::abh3_can_inBitSet(int8_t num,int8_t data,pCANABH3_RESULT pPtr)
 		Unlock();
 		}
 
+	//構造体に送信要素を書き込み
+	SetLastData(pPtr);
+
 	//完了
 	return(nResult);
 	}
@@ -395,6 +404,10 @@ int32_t CAbh3::abh3_can_reqPulse(pCANABH3_RESULT pPtr)
 		//通信排他制御用のセマフォを開放
 		Unlock();
 		}
+
+	//構造体に送信要素を書き込み
+	SetLastData(pPtr);
+
 	//完了
 	return(nResult);
 	}
@@ -436,6 +449,10 @@ int32_t CAbh3::abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr)
 		//通信排他制御用のセマフォを開放
 		Unlock();
 		}
+
+	//構造体に送信要素を書き込み
+	SetLastData(pPtr);
+
 	//完了
 	return(nResult);
 	}
@@ -924,5 +941,14 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 
 	//正常完了
 	return(0);
+	}
+
+//戻り値用構造体に最後に送信したデータを書き込み
+void CAbh3::SetLastData(pCANABH3_RESULT pDst)
+	{
+	//保存している送信要素を書き込み
+	pDst->DP0S.nOrderAY		= m_var.lastdata.send.nOrderAY;
+	pDst->DP0S.nOrderBX		= m_var.lastdata.send.nOrderBX;
+	pDst->DP0S.nInputBit	= m_var.lastdata.send.nInputBit;
 	}
 
