@@ -25,7 +25,6 @@ typedef struct _CANABH3_RESULT
 		int32_t		nInputBit;
 		} DP0S;
 
-
 	union
 		{
 		//“à•”—p

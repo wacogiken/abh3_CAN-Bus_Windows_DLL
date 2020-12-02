@@ -155,12 +155,6 @@ public:
 		return(nResult);
 		}
 
-	//実数（仕様書内で使う箇所が無い為、未実装）
-	//PACK_FLOAT flt_to_pkflt(float flt);
-	//float	pkflt_to_flt(PACK_FLOAT pkflt);
-	//int32_t str_to_pkflt(const char* str,PACK_FLOAT* p_pkflt);
-	//char* pkflt_to_str(PACK_FLOAT pkflt,char* str);
-
 //================================================================================
 //内部用
 //================================================================================
@@ -254,7 +248,7 @@ protected:
 		//
 		struct _CANABH3_LASTDATA
 			{
-			//
+			//過去に把握したデータ（送信）
 			struct _CANABH3_LASTDATA_SEND
 				{
 				uint32_t	nCanID;
@@ -262,7 +256,7 @@ protected:
 				int16_t		nOrderBX;
 				uint32_t	nInputBit;
 				} send;
-			//
+			//過去に把握したデータ（受信）
 			struct _CANABH3_LASTDATA_RECV
 				{
 				//uint32_t	nCanID;
@@ -296,7 +290,9 @@ protected:
 	CANABH3_VAR m_var;
 
 public:
+	//コンストラクタ
 	CAbh3(CCanIF* pDeviceClass = NULL);
+	//デストラクタ
 	virtual ~CAbh3();
 };
 

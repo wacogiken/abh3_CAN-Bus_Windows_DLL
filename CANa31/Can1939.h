@@ -10,7 +10,8 @@
 class CCan1939
 {
 public:
-	//
+
+	//列挙子
 	typedef enum
 		{
 		//マルチパケット関連定義
@@ -84,7 +85,14 @@ public:
 		::memcpy(&pDst[nDstPt],pSrc,size_t(nSrcSize));
 		}
 
-	//値の設定(8,16,24,32bit指定）
+	//概要
+	//	値の設定(8,16,24,32bit指定）
+	//パラメータ
+	//	pBuffer		格納先配列の先頭要素
+	//	nPt			格納先配列の要素番号
+	//	nValue		格納データ
+	//戻り値
+	//	無し
 	static void Set8L(uint8_t* pBuffer,int32_t nPt,uint8_t nValue)
 		{
 		pBuffer[nPt] = nValue;
@@ -106,7 +114,13 @@ public:
 		Set16L(pBuffer,nPt + 2,uint16_t(nValue >> 16));
 		}
 
-	//値の取得(8,16,24,32bit指定)
+	//概要
+	//	値の取得(8,16,24,32bit指定)
+	//パラメータ
+	//	pBuffer		格納先配列の先頭要素
+	//	nPt			格納先配列の要素番号
+	//戻り値
+	//	指定した要素番号の値が戻ります
 	static uint8_t Get8L(uint8_t* pBuffer,int32_t nPt)
 		{
 		return(pBuffer[nPt]);
@@ -127,7 +141,16 @@ public:
 		return(nResult);
 		}
 
-	//シングルパケット(DP0)の構築
+	//概要
+	//	シングルパケット(DP0)の構築
+	//パラメータ
+	//	nAYcmd		A/Y指令
+	//	nBXcmd		B/X指令
+	//	nBITcmd		入力(bit対応)
+	//戻り値
+	//	構築されたシングルパケット(DP0)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateSGL0(uint16_t nAYcmd,uint16_t nBXcmd,uint32_t nBITcmd)
 		{
 		uint8_t* pBuffer = CreateBuffer(0x00);
@@ -137,14 +160,28 @@ public:
 		return(pBuffer);
 		}
 
-	//シングルパケット(DP1)の構築
+	//概要
+	//	シングルパケット(DP1)の構築
+	//パラメータ
+	//	無し
+	//戻り値
+	//	構築されたシングルパケット(DP1)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateSGL1(void)
 		{
 		uint8_t* pBuffer = CreateBuffer(0x00);
 		return(pBuffer);
 		}
 
-	//ブロードキャストパケットの構築
+	//概要
+	//	ブロードキャストパケットの構築
+	//パラメータ
+	//	nSign		データ先頭3バイトに入る固定コード(0x00ffxx)
+	//戻り値
+	//	構築されたブロードキャストパケットへのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateBRD(uint32_t nSign)
 		{
 		uint8_t* pBuffer = CreateBuffer(0x00);
@@ -152,7 +189,15 @@ public:
 		return(pBuffer);
 		}
 
-	//マルチパケット(CM.RTS)の構築
+	//概要
+	//	マルチパケット(CM.RTS)の構築
+	//パラメータ
+	//	nDataSize		データサイズ
+	//	nMaxResponce	最大返答長
+	//戻り値
+	//	構築されたマルチパケット(CM_RTS)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateCMRTS(uint32_t nDataSize,uint8_t nMaxResponce = 0x08)
 		{
 		uint8_t* pBuffer = CreateBuffer(0xff);
@@ -166,7 +211,15 @@ public:
 		return(pBuffer);
 		}
 
-	//マルチパケット(CM_CTS)の構築
+	//概要
+	//	マルチパケット(CM_CTS)の構築
+	//パラメータ
+	//	nMaxResponce	最大返答長
+	//	nNextPacketNum	次パケット番号
+	//戻り値
+	//	構築されたマルチパケット(CM_CTS)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateCMCTS(uint8_t nMaxResponce,uint8_t nNextPacketNum)
 		{
 		uint8_t* pBuffer = CreateBuffer(0xff);
@@ -177,7 +230,16 @@ public:
 		return(pBuffer);
 		}
 
-	//マルチパケット(CM_DT)の構築
+	//概要
+	//	マルチパケット(CM_DT)の構築
+	//パラメータ
+	//	pData			送信データの先頭
+	//	nDataSize		データサイズ
+	//	nPacketNum		パケット番号
+	//戻り値
+	//	構築されたマルチパケット(CM_DT)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateCMDT(uint8_t* pData,uint32_t nDataSize,uint8_t nPacketNum)
 		{
 		//データの送信対象位置を算出し、データ範囲内かチェックする
@@ -197,7 +259,15 @@ public:
 		return(pBuffer);
 		}
 
-	//マルチパケット(CM_EOMA)の構築
+	//概要
+	//	マルチパケット(CM_EOMA)の構築
+	//パラメータ
+	//	nMsgSize		メッセージサイズ
+	//	nPacketCount	パケット数
+	//戻り値
+	//	構築されたマルチパケット(CM_EOMA)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateCMEOMA(uint16_t nMsgSize,uint8_t nPacketCount)
 		{
 		uint8_t* pBuffer = CreateBuffer(0xff);
@@ -208,7 +278,14 @@ public:
 		return(pBuffer);
 		}
 
-	//マルチパケット(CM_ABORT)の構築
+	//概要
+	//	マルチパケット(CM_ABORT)の構築
+	//パラメータ
+	//	nCause			中止理由
+	//戻り値
+	//	構築されたマルチパケット(CM_ABORT)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateCMABORT(uint8_t nCause)
 		{
 		uint8_t* pBuffer = CreateBuffer(0xff);
@@ -218,7 +295,15 @@ public:
 		return(pBuffer);
 		}
 
-	//マルチパケット(CM_BAM)の構築
+	//概要
+	//	マルチパケット(CM_BAM)の構築
+	//パラメータ
+	//	nMsgSize		メッセージサイズ
+	//	nPacketCount	パケット数
+	//戻り値
+	//	構築されたマルチパケット(CM_BAM)へのポインタが戻ります
+	//注意点
+	//	戻り値は呼び出し元で開放する必要が有ります
 	static uint8_t* CreateCMBAM(uint16_t nMsgSize,uint8_t nPacketCount)
 		{
 		uint8_t* pBuffer = CreateBuffer(0xff);
@@ -229,7 +314,12 @@ public:
 		return(pBuffer);
 		}
 
-	//データサイズから送信回数に変換
+	//概要
+	//	データサイズから送信回数に変換
+	//パラメータ
+	//	nDatasize		データサイズ
+	//戻り値
+	//	データを送信するのに必要なパケット数
 	static uint8_t datasize2msgcount(uint32_t nDatasize)
 		{
 		if(nDatasize > 7 * 0xff)
@@ -240,14 +330,25 @@ public:
 		return(nResult);
 		}
 
-	//パケット番号からデータ格納位置を算出
+	//概要
+	//	パケット番号からデータ格納位置を算出
+	//パラメータ
+	//	nPacket			パケット番号
+	//戻り値
+	//	このパケットに対応するデータ位置
 	static uint32_t packetnum2datapt(uint8_t nPacket)
 		{
 		uint32_t nResult = (nPacket - 1) * 7;
 		return(nResult);
 		}
 
-	//パケット種別を取得
+	//概要
+	//	パケット種別を取得
+	//パラメータ
+	//	pData			パケット先頭へのポインタ
+	//戻り値
+	//	DEF_UNKNOWN		不明なパケット
+	//	DEF_*			該当するパケット種別
 	static uint8_t IsPacket(uint8_t* pData)
 		{
 		uint8_t nResult = pData[0];

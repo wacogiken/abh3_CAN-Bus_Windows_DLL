@@ -114,10 +114,6 @@ protected:
 		//printf("\n");
 		}
 
-
-
-
-
 public:
 	CIxxatSimple();
 	virtual ~CIxxatSimple();

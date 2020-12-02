@@ -88,10 +88,6 @@ protected:
 	//指定IDが無視する対象か調べます
 	bool IsIgnoreID(uint32_t nID)
 		{
-		//注意点
-		//	優先度順に評価する為、else禁止
-
-
 		//指定ID自体が0か？（データパケットとしては有りえない）
 		if(nID == 0)
 			return(true);		//正常なパケットではないので無視する
@@ -137,13 +133,13 @@ private:
 		} CANIF_VAR,*pCANIF_VAR;
 	CANIF_VAR m_var;
 
-
-
 public:
+	//コンストラクタ
 	CCanIF()
 		{
 		::memset(&m_var,0,sizeof(CANIF_VAR));
 		}
+	//デストラクタ
 	virtual ~CCanIF()
 		{
 		}

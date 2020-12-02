@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "CANa31dll.h"
 
-
 //============================================================
 //エクスポート？
 //============================================================
@@ -103,20 +102,20 @@ CANA31API int32_t abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr);
 //マルチパケットによるTelABH3パケットの送受信
 CANA31API int32_t abh3_can_trans(char* sbuf,char* rbuf,size_t& rbuflen);
 
-//速度
+//速度から内部値へ変換
 CANA31API int16_t	cnvVel2CAN(float vel);
 CANA31API float	cnvCAN2Vel(int16_t vel);
 
-//トルク
+//内部値からトルクへ変換
 CANA31API float	cnvCAN2Trq(int16_t trq);
 
-//負荷率
+//内部値から負荷率に変換
 CANA31API float	cnvCAN2Load(int16_t load);
 
-//アナログ入力
+//内部値からアナログ入力に変換
 CANA31API float	cnvCAN2Analog(int16_t analog);
 
-//電源電圧
+//内部値から電源電圧に変換
 CANA31API float	cnvCAN2Volt(int16_t volt);
 
 //============================================================
