@@ -209,7 +209,7 @@ CANA31API int32_t abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr)
 CANA31API int32_t abh3_can_trans(char* sbuf,char* rbuf,size_t& rbuflen)
 	{
 	//注意点
-	//	アプリとDLLのHEAPが同一にならないような使い方（例：MFCをアプリで使用）を
+	//	アプリとDLLのHEAPが同一にならないような使い方（例：MFCアプリで使用）を
 	//	した場合、DLL側で確保したバッファをアプリ側で開放出来ない(ASSERTされる)為、
 	//	ここでアプリ側のバッファにDLL側のバッファ内容をコピーする
 	//
@@ -241,6 +241,8 @@ CANA31API int32_t abh3_can_trans(char* sbuf,char* rbuf,size_t& rbuflen)
 			rbuflen = nTmpLen;	//最低限必要なサイズを設定
 			nResult = -2;		//領域サイズが足りない扱い
 			}
+		//中継している為、開放が必要
+		delete pTmp;
 		}
 	//
 	return(nResult);
