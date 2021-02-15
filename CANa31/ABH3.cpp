@@ -8,6 +8,8 @@
 //							マルチパケットのデフォルト要求数を 0xff -> 0x08 に変更
 //							マルチパケットを途中で中止する場合にABORTを発行する様に修正
 //							（送信に失敗した場合が主な原因の為、ABORTが実際に送信されるかは時の運）
+//	2021/02/15	yo0043		3rd release
+//							コメント追加のみでプログラムに変更無し
 //
 
 #include "stdafx.h"
@@ -728,6 +730,11 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					nErrStage = nStage;
 					nStage = 99;
 					}
+				//上記以外？
+				else
+					{
+					//上記以外は見なかった事にして再送を待つ
+					}
 				}
 			else
 				{
@@ -812,6 +819,7 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					nErrStage = nStage;
 					nStage = 99;
 					}
+				//上記以外？
 				else
 					{
 					//上記以外は見なかった事にして再送を待つ
@@ -859,7 +867,7 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			uint8_t* pPacket = CCan1939::CreateBuffer();
 			for(uint8_t nLoop = 0;nLoop < nMaxPacket;nLoop++)
 				{
-				//
+				//受信
 				nResult = CanRecv8(&nID,pPacket);
 				//受信は正常？
 				if(nResult == 0)
@@ -893,6 +901,10 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				else
 					nStage = 4;	//CTS返答に戻る
 				}
+			else
+				{
+				//受信失敗、受信ルーチン内で移行先が設定されている為、何もしない
+				}
 			}
 
 		//EOMA返答ステージ
@@ -904,7 +916,10 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			CCan1939::FreeBuffer(pPacket);
 			//送信正常？
 			if(nResult == 0)
+				{
+				//完了ステージに移行
 				nStage = 7;
+				}
 			else
 				{
 				//CTS返答時に失敗、ABORT発行

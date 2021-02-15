@@ -85,7 +85,7 @@ typedef int32_t(*CA3_abh3_can_reqPulse)(pCANABH3_RESULT);
 typedef int32_t(*CA3_abh3_can_reqBRD)(uint8_t,pCANABH3_RESULT);
 
 //マルチパケットによるTelABH3パケットの送受信
-typedef int32_t(*CA3_abh3_can_trans)(char*,char*,size_t&);
+typedef int32_t(*CA3_abh3_can_trans)(char*,char*,uint32_t*);
 
 //速度
 typedef int16_t(*CA3_cnvVel2CAN)(float vel);
