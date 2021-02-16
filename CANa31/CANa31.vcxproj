@@ -186,6 +186,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CANa31.def" />
+    <None Include="CANa31導入.docx" />
     <None Include="関数リファレンス for CANa31.docx" />
   </ItemGroup>
   <ItemGroup>
