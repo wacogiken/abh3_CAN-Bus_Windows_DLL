@@ -3,6 +3,16 @@
 
 履歴
 
+	v1.1.1.3
+		・abh3_can_trans(CANa31.cpp)の処理を以下の様に変更
+			送信に失敗したら、CM_ABORT(2)を送る
+			受信に失敗したら、CM_ABORT(3)を送る
+			CM_DTの受信時に「予定していたシーケンス番号」と異なる場合は再要求
+			（一度に複数個要求した場合は、1つでもNGならリトライ）
+		・ドキュメント追加
+			CANa31導入.docx
+			関数リファレンスforCANa31.docx
+
 	v1.1.1.2
 		・abh3_can_trans(CANa31.cpp)に渡す型の変更(size_t& -> uint32_t*)
 
