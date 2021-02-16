@@ -859,7 +859,8 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//送信許可パケットはターゲット側が指定した値をそのまま利用
 
 			//CM_CTSパケットを作って送信
-			uint8_t* pPacket = CCan1939::CreateCMCTS(nMaxPacket,nPacketNum);
+			uint8_t nRemainPacket = nMaxPacket - nPacketNum + 1;				//残りのパケット数
+			uint8_t* pPacket = CCan1939::CreateCMCTS(nRemainPacket,nPacketNum);
 			nResult = CanSend8(nSendID,pPacket,8);
 			CCan1939::FreeBuffer(pPacket);
 			//CM_CTS送信正常？
@@ -927,7 +928,7 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//リトライが必要？
 			if(bRetry)
 				{
-				//同じパケット番号(nPacketNum)で再度データ(CM_DT)を要求する
+				//パケット番号(nPacketNum)が正しくない箇所から再度データ(CM_DT)を要求する
 				nStage = 4;
 				}
 
