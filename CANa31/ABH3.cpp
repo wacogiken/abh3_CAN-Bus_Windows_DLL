@@ -655,12 +655,28 @@ int32_t CAbh3::CanTermSingle(uint32_t nSendID,uint32_t nOnlyID,uint8_t* pSendDat
 //マルチパケット送信
 int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_t*& pRecvData,uint32_t& nRecvDataSize)
 	{
+	//概要
+	//	マルチパケット送信（PC側を起点とする送受信）を行う
+	//パラメータ
+	//	pSendData		送信データへのポインタ
+	//	nSendDataSize	送信データ長[bytes]
+	//	pRecvData		受信データを扱うポインタへの参照
+	//	nRecvDataSize	受信データ長を格納する変数の参照
+	//戻り値
+	//	0				正常終了
+	//	-11				通信先から中止要求(ABORT)を受信
+	//	-12				通信先からセッション重複要求（複数回のRTS）を受信
+	//	-13				PC側で送信失敗
+	//	-14				PC側で受信失敗（タイムアウト）
+	//
 	//注意点
+	//	関数が正常に終了した場合、pRecvDataには受信データが格納された領域へのポインタが入りますが、
+	//	このポインタは呼び出し元で開放する必要が有ります
 	//	pSendData末尾にSYN(0x16)を追加してから呼び出す事
 	//	(abh3_can_trans関数内で追加している）
 
-	//
-	int32_t nErrStage = 0;
+	//戻り値
+	int32_t nExitCode = 0;
 
 	//
 	uint32_t nStage = 0;	//状態遷移処理用ステージ番号
@@ -686,7 +702,7 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//送信許可パケット数を初期化（ホストの最大値）
 			nMaxPacket = 0xff;
 
-			//パケットを作って送信
+			//CM_RTS送信
 			uint8_t* pPacket = CCan1939::CreateCMRTS(nSendDataSize,nMaxPacket);
 			nResult = CanSend8(nSendID,pPacket,8);
 			CCan1939::FreeBuffer(pPacket);
@@ -695,7 +711,8 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				nStage = 1;
 			else
 				{
-				nErrStage = nStage;
+				//送信失敗
+				nExitCode = -13;
 				nStage = 99;	//RTS送信時に失敗、何も送信してないのでそのまま終了
 				}
 			}
@@ -712,7 +729,8 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 
 				//何のパケット？
 				uint8_t nType = CCan1939::IsPacket(pPacket);
-				//
+
+				//送信要求？
 				if(nType == CCan1939::DEF_CTS)
 					{
 					//ターゲット側から指定された送信許可パケット数を保存
@@ -722,31 +740,41 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					//DTを送るステージに遷移
 					nStage = 2;
 					}
+				//完了通知？
 				else if(nType == CCan1939::DEF_EOMA)
 					{
 					//受信完了扱い
 					nStage = 3;
 					}
+				//中止要求？
 				else if(nType == CCan1939::DEF_ABORT)
 					{
 					//中止扱い
-					nErrStage = nStage;
+					nExitCode = -11;
 					nStage = 99;
+					}
+				//新規要求？
+				else if(nType == CCan1939::DEF_RTS)
+					{
+					//セッション重複扱いでエラー
+					nExitCode = -12;
+					nAbort = 1;
+					nStage = 10;
 					}
 				//上記以外？
 				else
 					{
 					//上記以外は見なかった事にして再送を待つ
+					Sleep(0);
 					}
 				}
 			else
 				{
-				//受信処理に失敗したので、ABORT発行
+				//受信処理に失敗（タイムアウト）
+				nExitCode = -14;
 				nAbort = 3;	//Timeout
-				nErrStage = nStage;
 				nStage = 10;
 				}
-
 			//
 			CCan1939::FreeBuffer(pPacket);
 			}
@@ -784,9 +812,9 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//CM_DTパケットの送信に失敗？
 			if(nResult)
 				{
-				//CM_DTパケットの送信に失敗したので、ABORT発行
+				//送信失敗
+				nExitCode = -13;
 				nAbort = 2;	//resource不足
-				nErrStage = nStage;
 				nStage = 10;
 				}
 			else
@@ -833,20 +861,21 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				else if(nType == CCan1939::DEF_ABORT)
 					{
 					//中止扱い
-					nErrStage = nStage;
+					nExitCode = -11;
 					nStage = 99;
 					}
 				//上記以外？
 				else
 					{
 					//上記以外は見なかった事にして再送を待つ
+					Sleep(0);
 					}
 				}
 			else
 				{
 				//受信処理時に失敗、ABORT送信
+				nExitCode = -14;
 				nAbort = 3;	//Timeout
-				nErrStage = nStage;
 				nStage = 10;	
 				}
 			//
@@ -868,9 +897,9 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				nStage = 5;
 			else
 				{
-				//CM_CTS送信失敗したので、ABORT発行
+				//送信失敗
+				nExitCode = -13;
 				nAbort = 2;	//resource不足
-				nErrStage = nStage;
 				nStage = 10;
 				}
 			}
@@ -888,6 +917,8 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//受信領域構築
 			bool bRetry = false;
 			uint8_t* pPacket = CCan1939::CreateBuffer();
+
+			//送信されるデータ個数（予定数）の数だけ受信処理を行う
 			for(uint8_t nLoop = 0;nLoop < nMaxPacket;nLoop++)
 				{
 				//受信
@@ -903,7 +934,7 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 						break;
 						}
 					
-					//データ格納
+					//データ格納（7バイト）
 					CCan1939::SetData(pRecvData,nRecvDataSize,CCan1939::packetnum2datapt(nPacketNum),&pPacket[1],7);
 
 					//最終パケット番号？
@@ -915,9 +946,9 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					}
 				else
 					{
-					//DT受信処理時に失敗、ABORT発行
+					//受信処理に失敗
+					nExitCode = -14;
 					nAbort = 3;	//Timeout
-					nErrStage = nStage;
 					nStage = 10;
 					break;
 					}
@@ -944,6 +975,7 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			else
 				{
 				//受信失敗、受信ルーチン内で移行先が設定されている為、何もしない
+				Sleep(0);
 				}
 			}
 
@@ -962,9 +994,9 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				}
 			else
 				{
-				//CTS返答時に失敗、ABORT発行
+				//送信失敗
+				nExitCode = -13;
 				nAbort = 2;
-				nErrStage = nStage;
 				nStage = 10;
 				}
 			}
@@ -991,13 +1023,13 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 		//上記以外（エラーステージ）
 		else
 			{
-			//異常終了（異常発生ステージ番号+90が戻る）
-			return(nErrStage + 90);
+			//異常終了
+			break;
 			}
 		}
 
-	//正常完了
-	return(0);
+	//終了
+	return(nExitCode);
 	}
 
 //戻り値用構造体に最後に送信したデータを書き込み

@@ -3,6 +3,11 @@
 
 履歴
 
+	v1.1.1.4
+		・abh3_can_trans(CANa31.cpp)を変更
+			重複した要求(CM_RTS)を受信した場合は、CM_ABORT(1)を送る
+			戻り値の意味合いを変更
+
 	v1.1.1.3
 		・abh3_can_trans(CANa31.cpp)の処理を以下の様に変更
 			送信に失敗したら、CM_ABORT(2)を送る（これはインターフェースがbusyと判断した結果）
