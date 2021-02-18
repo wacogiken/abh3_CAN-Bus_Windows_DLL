@@ -27,6 +27,7 @@ CAbh3::CAbh3(CCanIF* pDeviceClass /* NULL */)
 
 	//出力段のクラスを保存
 	m_var.pDeviceClass = pDeviceClass;
+
 	}
 
 //デストラクタ
@@ -38,6 +39,9 @@ CAbh3::~CAbh3()
 	//通信制御用セマフォの開放
 	::CloseHandle(m_var.hTerm);
 	m_var.hTerm = NULL;
+
+	//デバッグ要素が残っている場合は開放
+	ClearDebugInfo();
 	}
 
 //================================================================================
@@ -675,6 +679,10 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 	//	pSendData末尾にSYN(0x16)を追加してから呼び出す事
 	//	(abh3_can_trans関数内で追加している）
 
+
+	//デバッグ要素のクリア
+	ClearDebugInfo();
+
 	//戻り値
 	int32_t nExitCode = 0;
 
@@ -705,7 +713,13 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//CM_RTS送信
 			uint8_t* pPacket = CCan1939::CreateCMRTS(nSendDataSize,nMaxPacket);
 			nResult = CanSend8(nSendID,pPacket,8);
+
+			//デバッグ情報追加
+			AddDebugInfo(true,pPacket);
+
+			//パケットの開放
 			CCan1939::FreeBuffer(pPacket);
+
 			//送信正常？
 			if(nResult == 0)
 				nStage = 1;
@@ -721,11 +735,16 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 		//	PCが送信ノード・ABH3が受信ノードで送信要求(RTS)又はデータ送信(DT)の返答が戻る
 		else if(nStage == 1)
 			{
+			//受信
 			uint8_t* pPacket = CCan1939::CreateBuffer();
 			nResult = CanRecv8(&nID,pPacket);
+
 			if(nResult == 0)
 				{
 				//受信は正常
+
+				//デバッグ情報追加
+				AddDebugInfo(false,pPacket);
 
 				//何のパケット？
 				uint8_t nType = CCan1939::IsPacket(pPacket);
@@ -735,8 +754,10 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					{
 					//ターゲット側から指定された送信許可パケット数を保存
 					nMaxPacket = pPacket[1];
+
 					//次に送信するパケット番号を保存
 					nPacketNum = pPacket[2];
+
 					//DTを送るステージに遷移
 					nStage = 2;
 					}
@@ -775,13 +796,16 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				nAbort = 3;	//Timeout
 				nStage = 10;
 				}
-			//
+
+			//パケットの開放
 			CCan1939::FreeBuffer(pPacket);
 			}
 
 		//DTを送るステージ
 		//	PCが送信ノード・ABH3が受信ノードで1つ前の返答(CTS)で指定されたデータを送る
 		//	送る位置(nPacketNum)と個数(nMaxPacket)は、1つ前の返答(CTS)で指定されている
+		//	データの送信試行回数は「通信先が指定した回数」であり、それよりデータが短い場合は
+		//	少ない回数となる
 		else if(nStage == 2)
 			{
 			//要求数が0?
@@ -793,16 +817,23 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//
 			for(uint8_t nLoop = 0;nLoop < nMaxPacket;nLoop++)
 				{
-				//CM_DTパケットを作成出来たら送信する
+				//CM_DTパケットを作成（データオーバーランする場合はNULLが戻る）
 				uint8_t* pPacket = CCan1939::CreateCMDT(pSendData,nSendDataSize,nPacketNum);
+				//送信対象のデータが有る？
 				if(pPacket)
-					nResult = CanSend8(nSendDTID,pPacket,8);
-	
-				//送る位置を更新
-				++nPacketNum;
+					{
+					//送信
+					nResult = CanSend8(nSendDTID,pPacket,8);	//CM_DT送信
 
-				//作成したCM_DTパケットを開放
-				CCan1939::FreeBuffer(pPacket);
+					//デバッグ情報追加
+					AddDebugInfo(true,pPacket);
+
+					//パケットの開放
+					CCan1939::FreeBuffer(pPacket);
+
+					//送る位置を更新
+					++nPacketNum;
+					}
 
 				//送信失敗？
 				if(nResult)
@@ -828,9 +859,13 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//受信領域構築
 			uint8_t* pPacket = CCan1939::CreateBuffer();
 			nResult = CanRecv8(&nID,pPacket);
+
 			//受信は正常？
 			if(nResult == 0)
 				{
+				//デバッグ情報追加
+				AddDebugInfo(false,pPacket);
+
 				//何のパケット？
 				uint8_t nType = CCan1939::IsPacket(pPacket);
 				//CM_RTS?
@@ -878,7 +913,8 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				nAbort = 3;	//Timeout
 				nStage = 10;	
 				}
-			//
+
+			//パケットの開放
 			CCan1939::FreeBuffer(pPacket);
 			}
 		//CTS返答ステージ
@@ -891,7 +927,13 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			uint8_t nRemainPacket = nMaxPacket - nPacketNum + 1;				//残りのパケット数
 			uint8_t* pPacket = CCan1939::CreateCMCTS(nRemainPacket,nPacketNum);
 			nResult = CanSend8(nSendID,pPacket,8);
+
+			//デバッグ情報追加
+			AddDebugInfo(true,pPacket);
+
+			//パケットの開放
 			CCan1939::FreeBuffer(pPacket);
+
 			//CM_CTS送信正常？
 			if(nResult == 0)
 				nStage = 5;
@@ -923,9 +965,13 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 				{
 				//受信
 				nResult = CanRecv8(&nID,pPacket);
+
 				//受信は正常？
 				if(nResult == 0)
 					{
+					//デバッグ情報追加
+					AddDebugInfo(false,pPacket);
+
 					//シーケンス番号が異なる？
 					if(pPacket[0] != nPacketNum)
 						{
@@ -953,7 +999,8 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 					break;
 					}
 				}
-			//受信領域開放
+
+			//パケットの開放
 			CCan1939::FreeBuffer(pPacket);
 
 			//リトライが必要？
@@ -985,7 +1032,13 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 			//パケットを作って送信
 			uint8_t* pPacket = CCan1939::CreateCMEOMA(nTotalPacket * 8,nTotalPacket);
 			nResult = CanSend8(nSendID,pPacket,8);
+	
+			//デバッグ情報追加
+			AddDebugInfo(true,pPacket);
+
+			//パケットの開放
 			CCan1939::FreeBuffer(pPacket);
+
 			//送信正常？
 			if(nResult == 0)
 				{
@@ -1012,11 +1065,17 @@ int32_t CAbh3::CanTermSendMulti(uint8_t* pSendData,uint32_t nSendDataSize,uint8_
 		//	CM_ABORTを送る、nAbortに理由を入れておく(2...リソース不足  3..タイムアウト)
 		else if(nStage == 10)
 			{
-			//ABORTパケットを作る
+			//ABORTパケットを作って送信
 			uint8_t* pPacket = CCan1939::CreateCMABORT(nAbort);
 			nResult = CanSend8(nSendID,pPacket,8);
+
+			//デバッグ情報追加
+			AddDebugInfo(true,pPacket);
+
+			//パケットの開放
 			CCan1939::FreeBuffer(pPacket);
-			//
+
+			//エラーステージへ遷移
 			nStage = 99;
 			}
 

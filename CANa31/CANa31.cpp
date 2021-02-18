@@ -283,3 +283,29 @@ CANA31API float	cnvCAN2Volt(int16_t volt)
 	return(g_pAbh3->cnvCAN2Volt(volt));
 	}
 
+
+
+//デバッグ機能の有効無効設定
+CANA31API int32_t SetDebugMode(int32_t nEnable)
+	{
+	g_pAbh3->SetDebugMode((bool)(nEnable != 0));
+	return(0);
+	}
+
+//デバッグ情報のクリア
+CANA31API int32_t ClearDebugInfo(uint8_t nDummy)
+	{
+	g_pAbh3->ClearDebugInfo();
+	return(0);
+	}
+
+//デバッグ情報の取得
+CANA31API int32_t GetDebugInfo(int32_t nPt,uint8_t* pMemory9)
+	{
+	uint8_t* pInfo = g_pAbh3->GetDebugInfo(nPt);
+	if(pInfo == NULL)
+		return(1);
+	//
+	::memcpy(pMemory9,pInfo,9);
+	return(0);
+	}

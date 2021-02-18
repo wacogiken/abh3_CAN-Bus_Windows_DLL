@@ -103,6 +103,18 @@ typedef float(*CA3_cnvCAN2Analog)(int16_t);
 //電源電圧
 typedef float(*CA3_cnvCAN2Volt)(int16_t);
 
+
+//デバッグ機能の有効無効設定
+typedef int32_t(*CA3_SetDebugMode)(int32_t);
+
+//デバッグ情報のクリア
+typedef int32_t(*CA3_ClearDebugInfo)(uint8_t);
+
+//デバッグ情報の取得
+typedef int32_t(*CA3_GetDebugInfo)(int32_t,uint8_t*);
+
+
+
 //============================================================
 //DLLの全関数を扱う為の構造体
 //============================================================
@@ -172,8 +184,17 @@ typedef struct _CA3_FUNCLIST
 	CA3_cnvCAN2Analog		cnvCAN2Analog;
 	//電源電圧
 	CA3_cnvCAN2Volt			cnvCAN2Volt;
+
+	//
+
+	//デバッグ機能の有効無効設定
+	CA3_SetDebugMode		SetDebugMode;
+	//デバッグ情報のクリア
+	CA3_ClearDebugInfo		ClearDebugInfo;
+	//デバッグ情報の取得
+	CA3_GetDebugInfo		GetDebugInfo;
+
 	} CA3_FUNCLIST,*pCA3_FUNCLIST;
 
 //DLLの関数を一括で扱う為の関数定義
-//typedef int32_t(*CA3_GetFunctions)(HMODULE,pCA3_FUNCLIST);
 int32_t GetFunctions(HMODULE hDLL,pCA3_FUNCLIST pFuncList);

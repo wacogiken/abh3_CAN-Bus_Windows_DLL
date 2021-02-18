@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <stdint.h>
 #include <timeapi.h>
+#include <stdio.h>
 
 //CAN関連
 #include "Can1939.h"
@@ -233,6 +234,7 @@ protected:
 	//戻り値用構造体に最後に送信したデータを書き込み
 	void SetLastData(pCANABH3_RESULT pDst);
 
+
 	//内部用変数
 	typedef struct _CANABH3_VAR
 		{
@@ -285,9 +287,93 @@ protected:
 				float		nMonitor0;
 				float		nMonitor1;
 				} recv;
+
 			} lastdata;
+
+		//デバッグ用
+		struct _CANABH3_DEBUG
+			{
+			bool			bEnable;	//デバッグ機能の有効無効設定
+			int				nInfoPt;	//次の書き込み場所
+			uint8_t*		pInfoData;	//9バイト単位で使う(先頭が0で送信、1で受信)
+			} debug;
+
 		} CANABH3_VAR,*pCANABH3_VAR;
 	CANABH3_VAR m_var;
+
+protected:
+
+	//デバッグ情報の追加
+	void AddDebugInfo(bool bSend,uint8_t* pData8)
+		{
+		//デバッグ機能が有効か？
+		if(m_var.debug.bEnable)
+			{
+//
+int x = 0;
+for(int nPt = 0;nPt < 8;nPt++)
+	x += pData8[nPt];
+if(x == 0)
+Sleep(0);
+
+
+
+
+
+
+
+
+			//初回利用？
+			if(m_var.debug.pInfoData == NULL)
+				{
+				m_var.debug.pInfoData = new uint8_t[512 * 9]();
+				m_var.debug.nInfoPt = 0;
+				}
+
+			//書き込めるか？
+			if(m_var.debug.nInfoPt < 512)
+				{
+				//配列番号
+				int nPt = 9 * m_var.debug.nInfoPt;
+				//
+				if(bSend)
+					m_var.debug.pInfoData[nPt + 0] = 0;
+				else
+					m_var.debug.pInfoData[nPt + 0] = 1;
+				memcpy(&m_var.debug.pInfoData[nPt + 1],pData8,8);
+				//
+				++m_var.debug.nInfoPt;
+				}
+			}
+		}
+
+public:
+	//デバッグ機能の有効無効
+	void SetDebugMode(bool bEnable = false)
+		{
+		if(!bEnable)
+			ClearDebugInfo();
+		m_var.debug.bEnable = bEnable;
+		}
+
+	//デバッグ情報の初期化
+	void ClearDebugInfo(void)
+		{
+		m_var.debug.nInfoPt = 0;
+		if(m_var.debug.pInfoData)
+			{
+			delete m_var.debug.pInfoData;
+			m_var.debug.pInfoData = NULL;
+			}
+		}
+
+	//デバッグ情報の取得
+	uint8_t* GetDebugInfo(int nPt)
+		{
+		if(nPt < m_var.debug.nInfoPt)
+			return(&m_var.debug.pInfoData[nPt * 9]);
+		return(NULL);
+		}
 
 public:
 	//コンストラクタ

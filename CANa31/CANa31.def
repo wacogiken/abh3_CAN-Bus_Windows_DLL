@@ -34,3 +34,7 @@ EXPORTS
 	cnvCAN2Load
 	cnvCAN2Analog
 	cnvCAN2Volt
+
+	SetDebugMode
+	ClearDebugInfo
+	GetDebugInfo

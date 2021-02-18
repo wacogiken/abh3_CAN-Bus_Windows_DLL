@@ -14,6 +14,10 @@ int32_t GetFunctions(HMODULE hDLL,pCA3_FUNCLIST pFuncList)
 	{
 	if (hDLL && pFuncList)
 		{
+		//==========
+		//ユーザー用
+		//==========
+
 		//使用開始時に呼び出す必要が有ります
 		pFuncList->InitInstance			= (CA3_InitInstance)GetDllFunc(hDLL,"InitInstance");
 		//使用終了時に呼び出す必要が有ります
@@ -76,6 +80,18 @@ int32_t GetFunctions(HMODULE hDLL,pCA3_FUNCLIST pFuncList)
 		pFuncList->cnvCAN2Analog		= (CA3_cnvCAN2Analog)GetDllFunc(hDLL,"cnvCAN2Analog");
 		//電源電圧
 		pFuncList->cnvCAN2Volt			= (CA3_cnvCAN2Volt)GetDllFunc(hDLL,"cnvCAN2Volt");
+
+		//==========
+		//デバッグ用
+		//==========
+
+		//デバッグ機能の有効無効
+		pFuncList->SetDebugMode			= (CA3_SetDebugMode)GetDllFunc(hDLL,"SetDebugMode");
+		//デバッグ情報のクリア
+		pFuncList->ClearDebugInfo		= (CA3_ClearDebugInfo)GetDllFunc(hDLL,"ClearDebugInfo");
+		//デバッグ情報の取得
+		pFuncList->GetDebugInfo			= (CA3_GetDebugInfo)GetDllFunc(hDLL,"GetDebugInfo");
+
 		}
 	return(0);
 	}

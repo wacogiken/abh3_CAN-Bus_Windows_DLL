@@ -119,6 +119,20 @@ CANA31API float	cnvCAN2Analog(int16_t analog);
 CANA31API float	cnvCAN2Volt(int16_t volt);
 
 //============================================================
+//デバッグ用
+//============================================================
+
+//デバッグ機能の有効無効設定
+CANA31API int32_t SetDebugMode(int32_t nEnable);
+
+//デバッグ情報のクリア
+CANA31API int32_t ClearDebugInfo(uint8_t nDummy);
+
+//デバッグ情報の取得
+CANA31API int32_t GetDebugInfo(int32_t nPt,uint8_t* pMemory9);
+
+
+//============================================================
 //リンケージ解除
 //============================================================
 #ifdef __cplusplus
