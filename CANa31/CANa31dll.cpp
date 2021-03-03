@@ -72,16 +72,15 @@ int32_t GetFunctions(HMODULE hDLL,pCA3_FUNCLIST pFuncList)
 		//速度
 		pFuncList->cnvVel2CAN			= (CA3_cnvVel2CAN)GetDllFunc(hDLL,"cnvVel2CAN");
 		pFuncList->cnvCAN2Vel			= (CA3_cnvCAN2Vel)GetDllFunc(hDLL,"cnvCAN2Vel");
-		//トルク
-		pFuncList->cnvCAN2Trq			= (CA3_cnvCAN2Trq)GetDllFunc(hDLL,"cnvCAN2Trq");
+		//電流
+		pFuncList->cnvCur2CAN			= (CA3_cnvCur2CAN)GetDllFunc(hDLL,"cnvCur2CAN");
+		pFuncList->cnvCAN2Cur			= (CA3_cnvCAN2Cur)GetDllFunc(hDLL,"cnvCAN2Cur");
 		//負荷率
 		pFuncList->cnvCAN2Load			= (CA3_cnvCAN2Load)GetDllFunc(hDLL,"cnvCAN2Load");
 		//アナログ入力
 		pFuncList->cnvCAN2Analog		= (CA3_cnvCAN2Analog)GetDllFunc(hDLL,"cnvCAN2Analog");
 		//電源電圧
 		pFuncList->cnvCAN2Volt			= (CA3_cnvCAN2Volt)GetDllFunc(hDLL,"cnvCAN2Volt");
-		//電流
-		pFuncList->cnvCAN2Cur			= (CA3_cnvCAN2Cur)GetDllFunc(hDLL,"cnvCAN2Cur");
 
 
 		//==========

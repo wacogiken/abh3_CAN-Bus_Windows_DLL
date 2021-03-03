@@ -91,8 +91,9 @@ typedef int32_t(*CA3_abh3_can_trans)(char*,char*,uint32_t*);
 typedef int16_t(*CA3_cnvVel2CAN)(float vel);
 typedef float(*CA3_cnvCAN2Vel)(int16_t vel);
 
-//トルク
-typedef float(*CA3_cnvCAN2Trq)(int16_t);
+//電流
+typedef int16_t(*CA3_cnvCur2CAN)(float);
+typedef float(*CA3_cnvCAN2Cur)(int16_t);
 
 //負荷率
 typedef float(*CA3_cnvCAN2Load)(int16_t);
@@ -103,8 +104,6 @@ typedef float(*CA3_cnvCAN2Analog)(int16_t);
 //電源電圧
 typedef float(*CA3_cnvCAN2Volt)(int16_t);
 
-//電流
-typedef float(*CA3_cnvCAN2Cur)(int16_t);
 
 //デバッグ機能の有効無効設定
 typedef int32_t(*CA3_SetDebugMode)(int32_t);
@@ -178,16 +177,15 @@ typedef struct _CA3_FUNCLIST
 	//速度
 	CA3_cnvVel2CAN			cnvVel2CAN;
 	CA3_cnvCAN2Vel			cnvCAN2Vel;
-	//トルク
-	CA3_cnvCAN2Trq			cnvCAN2Trq;
+	//電流
+	CA3_cnvCAN2Cur			cnvCAN2Cur;
+	CA3_cnvCur2CAN			cnvCur2CAN;
 	//負荷率
 	CA3_cnvCAN2Load			cnvCAN2Load;
 	//アナログ入力
 	CA3_cnvCAN2Analog		cnvCAN2Analog;
 	//電源電圧
 	CA3_cnvCAN2Volt			cnvCAN2Volt;
-	//電流
-	CA3_cnvCAN2Cur			cnvCAN2Cur;
 
 	//
 
