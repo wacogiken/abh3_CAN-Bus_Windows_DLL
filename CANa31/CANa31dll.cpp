@@ -80,6 +80,9 @@ int32_t GetFunctions(HMODULE hDLL,pCA3_FUNCLIST pFuncList)
 		pFuncList->cnvCAN2Analog		= (CA3_cnvCAN2Analog)GetDllFunc(hDLL,"cnvCAN2Analog");
 		//電源電圧
 		pFuncList->cnvCAN2Volt			= (CA3_cnvCAN2Volt)GetDllFunc(hDLL,"cnvCAN2Volt");
+		//電流
+		pFuncList->cnvCAN2Cur			= (CA3_cnvCAN2Cur)GetDllFunc(hDLL,"cnvCAN2Cur");
+
 
 		//==========
 		//デバッグ用

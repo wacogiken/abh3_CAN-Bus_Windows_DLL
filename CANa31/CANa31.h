@@ -103,11 +103,16 @@ CANA31API int32_t abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr);
 CANA31API int32_t abh3_can_trans(char* sbuf,char* rbuf,uint32_t* rbuflen);
 
 //速度から内部値へ変換
-CANA31API int16_t	cnvVel2CAN(float vel);
+CANA31API int16_t cnvVel2CAN(float vel);
+
+//内部値から速度へ変換
 CANA31API float	cnvCAN2Vel(int16_t vel);
 
-//内部値からトルクへ変換
-CANA31API float	cnvCAN2Trq(int16_t trq);
+//電流値から内部値に変換
+CANA31API int16_t cnvCur2CAN(float cur);
+
+//内部値から電流値に変換
+CANA31API float	cnvCAN2Cur(int16_t cur);
 
 //内部値から負荷率に変換
 CANA31API float	cnvCAN2Load(int16_t load);
@@ -117,6 +122,8 @@ CANA31API float	cnvCAN2Analog(int16_t analog);
 
 //内部値から電源電圧に変換
 CANA31API float	cnvCAN2Volt(int16_t volt);
+
+
 
 //============================================================
 //デバッグ用

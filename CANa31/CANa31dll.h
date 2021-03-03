@@ -103,6 +103,8 @@ typedef float(*CA3_cnvCAN2Analog)(int16_t);
 //電源電圧
 typedef float(*CA3_cnvCAN2Volt)(int16_t);
 
+//電流
+typedef float(*CA3_cnvCAN2Cur)(int16_t);
 
 //デバッグ機能の有効無効設定
 typedef int32_t(*CA3_SetDebugMode)(int32_t);
@@ -184,6 +186,8 @@ typedef struct _CA3_FUNCLIST
 	CA3_cnvCAN2Analog		cnvCAN2Analog;
 	//電源電圧
 	CA3_cnvCAN2Volt			cnvCAN2Volt;
+	//電流
+	CA3_cnvCAN2Cur			cnvCAN2Cur;
 
 	//
 

@@ -259,10 +259,14 @@ CANA31API float	cnvCAN2Vel(int16_t vel)
 	return(g_pAbh3->cnvCAN2Vel(vel));
 	}
 
-//トルク
-CANA31API float	cnvCAN2Trq(int16_t trq)
+//電流値
+CANA31API int16_t cnvCur2CAN(float cur)
 	{
-	return(g_pAbh3->cnvCAN2Trq(trq));
+	return(g_pAbh3->cnvCur2CAN(cur));
+	}
+CANA31API float	cnvCAN2Cur(int16_t cur)
+	{
+	return(g_pAbh3->cnvCAN2Cur(cur));
 	}
 
 //負荷率
@@ -282,6 +286,8 @@ CANA31API float	cnvCAN2Volt(int16_t volt)
 	{
 	return(g_pAbh3->cnvCAN2Volt(volt));
 	}
+
+
 
 
 

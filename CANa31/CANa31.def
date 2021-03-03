@@ -30,7 +30,8 @@ EXPORTS
 	abh3_can_trans
 	cnvVel2CAN
 	cnvCAN2Vel
-	cnvCAN2Trq
+	cnvCur2CAN
+	cnvCAN2Cur
 	cnvCAN2Load
 	cnvCAN2Analog
 	cnvCAN2Volt

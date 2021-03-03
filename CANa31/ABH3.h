@@ -128,13 +128,6 @@ public:
 		return(nResult);
 		}
 
-	//トルク
-	float	cnvCAN2Trq(int16_t trq)
-		{
-		float nResult = float(trq) * 0.01f;
-		return(nResult);
-		}
-
 	//負荷率
 	float	cnvCAN2Load(int16_t load)
 		{
@@ -155,6 +148,19 @@ public:
 		float nResult = float(volt) * 0.1f;
 		return(nResult);
 		}
+
+	//電流
+	float	cnvCAN2Cur(int16_t cur)
+		{
+		float nResult = float(cur) * 0.01f;
+		return(nResult);
+		}
+	int16_t cnvCur2CAN(float cur)
+		{
+		int16_t nResult = int16_t(cur / 0.01f);
+		return(nResult);
+		}
+
 
 //================================================================================
 //内部用
