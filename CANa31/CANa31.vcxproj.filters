@@ -76,10 +76,16 @@
     <None Include="CANa31.def" />
     <None Include="関数リファレンス for CANa31.docx" />
     <None Include="CANa31導入.docx" />
+    <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CANa31.rc">
       <Filter>リソース ファイル</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\img\img_abh3_01.jpg">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>
