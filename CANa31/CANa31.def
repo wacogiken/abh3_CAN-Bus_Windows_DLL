@@ -25,7 +25,6 @@ EXPORTS
 	abh3_can_cmd
 	abh3_can_inSet
 	abh3_can_inBitSet
-	abh3_can_reqPulse
 	abh3_can_reqBRD
 	abh3_can_trans
 	cnvVel2CAN

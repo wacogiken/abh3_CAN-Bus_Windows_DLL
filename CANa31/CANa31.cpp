@@ -230,10 +230,11 @@ CANA31API int32_t abh3_can_inBitSet(int8_t num,int8_t data,pCANABH3_RESULT pPtr)
 	}
 
 //積算値のリクエスト
-CANA31API int32_t abh3_can_reqPulse(pCANABH3_RESULT pPtr)
-	{
-	return(g_pAbh3->abh3_can_reqPulse(pPtr));
-	}
+//2021.05.14 無効化（機能重複の為）
+//CANA31API int32_t abh3_can_reqPulse(pCANABH3_RESULT pPtr)
+//	{
+//	return(g_pAbh3->abh3_can_reqPulse(pPtr));
+//	}
 
 //ブロードキャストパケットのリクエスト
 CANA31API int32_t abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr)

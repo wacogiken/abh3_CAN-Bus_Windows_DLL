@@ -130,7 +130,8 @@ CANA31API int32_t abh3_can_inSet(int32_t data,int32_t mask,pCANABH3_RESULT pPtr)
 CANA31API int32_t abh3_can_inBitSet(int8_t num,int8_t data,pCANABH3_RESULT pPtr);
 
 //積算値のリクエスト
-CANA31API int32_t abh3_can_reqPulse(pCANABH3_RESULT pPtr);
+//2021.05.14 機能無効化の為、削除
+//CANA31API int32_t abh3_can_reqPulse(pCANABH3_RESULT pPtr);
 
 //ブロードキャストパケットのリクエスト
 CANA31API int32_t abh3_can_reqBRD(uint8_t num,pCANABH3_RESULT pPtr);
